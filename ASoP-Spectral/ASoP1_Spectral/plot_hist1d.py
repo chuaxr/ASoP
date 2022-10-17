@@ -159,7 +159,8 @@ def plot_1dhist(plotname,region,filenames,runtitles,plottitle,timescale=None,fil
                 hist1da=calc_1d_contr(avg_rain_bins_a,region)
                 hist1db=calc_1d_contr(avg_rain_bins_b,region)
 
-            hist1d=hist1db-hist1da
+            hist1d=hist1db.copy()
+            hist1d.data=hist1db.data-hist1da.data
 
         if type(runtitles[i]) is list:
             iplt.plot(hist1d[1:90],label='{} minus {}'.format(runtitles[i][1], runtitles[i][0]),color=c,linewidth=2.5)

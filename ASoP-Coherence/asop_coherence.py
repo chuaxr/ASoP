@@ -676,8 +676,8 @@ def compute_equalarea_corr(precip,model_dict):
             distance_max=dist
         else:
             distance_correlations[dist]=-999
-        if distance_max==0:
-            print("ERROR: no points found within max_box_distance. Try expanding region size.")
+    if distance_max==0:
+        print("ERROR: no points found within max_box_distance. Try expanding box size.")
     print('---> Info: There are '+str(nboxes)+' sub-boxes in your input data.')
     return(distance_correlations,distance_ranges,distance_max)
 
