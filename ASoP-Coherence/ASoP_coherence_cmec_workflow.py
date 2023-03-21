@@ -574,6 +574,11 @@ if __name__ == '__main__':
 
             # Plot 1D and 2D histograms (e.g., Fig. 2a in Klingaman et al. 2017).
             asop.plot_histogram(oned_hist,twod_hist,asop_dict,bins,wk_dir=fig_dir,ext=ext)
+            np.savetxt(fig_dir+'/plot_histogram_oned_hist.out', oned_hist, delimiter=',')
+            np.savetxt(fig_dir+'/plot_histogram_twod_hist.out', twod_hist, delimiter=',')
+            np.savetxt(fig_dir+'/plot_histogram_bins.out', bins, delimiter=',')
+            with open(fig_dir+'/plot_histogram_asop_dict.out', 'w') as f:
+                f.write(json.dumps(asop_dict))
 
             # Compute correlations as a function of native gridpoints, by dividing
             # analysis region into sub-regions (boxes of length region_size).  Also
@@ -583,6 +588,13 @@ if __name__ == '__main__':
             # Plot correlations as a function of native gridpoints and time lag
             # (e.g., Figs. 2c and 2e in Klingaman et al. 2017).
             asop.plot_equalgrid_corr(corr_map,lag_vs_distance,autocorr,npts,asop_dict,wk_dir=fig_dir,ext=ext)
+            for i1 in range(0,corr_map.shape[0]):
+                np.savetxt(fig_dir+f'/plot_equalgrid_corr_corr_map{i1}.out', corr_map[i1,:,:], delimiter=',')
+            np.savetxt(fig_dir+'/plot_equalgrid_corr_lag_vs_distance.out', lag_vs_distance, delimiter=',')
+            np.savetxt(fig_dir+'/plot_equalgrid_corr_autocorr.out', autocorr, delimiter=',')
+            np.savetxt(fig_dir+'/plot_equalgrid_corr_npts.out', npts, delimiter=',')
+            with open(fig_dir+'/plot_equalgrid_corr_asop_dict.out', 'w') as f:
+                f.write(json.dumps(asop_dict))
 
             # Compute correlations as a function of physical distance, by dividing
             # analysis region into sub-regions (boxes of length box_size).
@@ -606,9 +618,21 @@ if __name__ == '__main__':
 
         # Plot correlations as a function of physical distance for all datasets
         asop.plot_equalarea_corr(all_distance_correlations,all_distance_ranges,all_distance_max,colors=all_colors,legend_names=all_legend_names,set_desc=region,wk_dir=fig_dir,ext=ext)
+        np.savetxt(fig_dir+'/plot_equalarea_corr_all_distance_correlations.out', all_distance_correlations, delimiter=',')
+        for i1 in range(0,all_distance_ranges.shape[0]):
+            np.savetxt(fig_dir+f'plot_equalarea_all_distance_ranges{i1}.out', all_distance_ranges[i1,:,:], delimiter=',')
+        np.savetxt(fig_dir+'/plot_equalarea_corr_all_distance_max.out', all_distance_max, delimiter=',')
+        np.savetxt(fig_dir+'/plot_equalarea_corr_all_colors.out', all_colors, delimiter=',')
+        with open(fig_dir+'/plot_equalarea_corr_all_legend_names.out', "w") as output:
+            output.write(str(all_legend_names))
 
         # Plot correlations as a function of physical time for all datasets
         asop.plot_autocorr(all_time_correlations,all_time_max,dt=all_dt,colors=all_colors,legend_names=all_legend_names,set_desc=region,wk_dir=fig_dir,ext=ext)
+        np.savetxt(fig_dir+'/plot_autocorr_all_time_correlations.out', all_time_correlations, delimiter=',')
+        np.savetxt(fig_dir+'/plot_autocorr_all_time_max.out', all_time_max, delimiter=',')
+        np.savetxt(fig_dir+'/plot_autocorr_all_colors.out', all_colors, delimiter=',')
+        with open(fig_dir+'/plot_autocorr_all_legend_names.out', "w") as output:
+            output.write(str(all_legend_names))
 
         # Load and process csv files for this region to make main csv
         merge_csvs(metrics_csv_dims,metrics_csv_int,region,met_dir)
