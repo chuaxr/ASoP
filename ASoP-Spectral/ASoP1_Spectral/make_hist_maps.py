@@ -122,7 +122,7 @@ def extract_region(cube, region):
     return reg_cube
 
 
-def make_hist_ppn(ppn_cube,region=None):
+def make_hist_ppn(ppn_cube,region=None, nbins=120):
     """
     Function to create set of histograms for precipitation data input from filename
     NOTE that this function explicitly assumes precipitation data are input.
@@ -135,6 +135,8 @@ def make_hist_ppn(ppn_cube,region=None):
        region to create histograms within.
        List of [west longitude, south latitude, east longitude, north latitude] in degrees.
        If not specified, use all available gridpoints.
+    * nbins:
+      Number of histogram bins. The original used 100.
 
     Internal variables:
     * pbin2, pbin:
@@ -145,6 +147,7 @@ def make_hist_ppn(ppn_cube,region=None):
        Counts of values into element [i] of the output histogram are made such that pbin[i] <= values < pbin[i+1]
        Counts of values >= 2209 kg/m2/day are included in the 100th element.
        This means that histogram will sum to the number of intervals in the sample.
+       For nbins=120, pbin goes up to 119 and ranges up to 8827 kg/m2/day.
 
     Returned:
     * cube_of_hist
@@ -184,14 +187,14 @@ def make_hist_ppn(ppn_cube,region=None):
     else:
         reg_ppn_cube = ppn_cube
 
-# Set up 100 bin limits for precipitation data in kg/m2/day, making lowest limit zero (i.e. pbin[0] = 0.0) so that
+# Set up nbins bin limits for precipitation data in kg/m2/day, making lowest limit zero (i.e. pbin[0] = 0.0) so that
 # histogram will sum to total no. of intervals in sample.
 
-    pbin2=np.exp(np.log(0.005)+np.sqrt(np.linspace(0,98,99)*((np.square(np.log(120.)-np.log(0.005)))/59.)))
-    pbin=np.zeros(100)
-    pbin[1:]=pbin2[0:99]
+    pbin2=np.exp(np.log(0.005)+np.sqrt(np.linspace(0,nbins-2,nbins-1)*((np.square(np.log(120.)-np.log(0.005)))/59.)))
+    pbin=np.zeros(nbins)
+    pbin[1:]=pbin2[0:nbins-1]
 
-# Make cube of counts for the first bin as template for the other 99
+# Make cube of counts for the first bin as template for the other nbins-1
 
     ecount=hist_count(reg_ppn_cube, pbin[0], pbin[1])
     ecount.var_name='Precipitation'
@@ -204,20 +207,20 @@ def make_hist_ppn(ppn_cube,region=None):
     cube_of_hist = extend_cube_with_dimcoord(ecount, pbincoord)
     cube_of_hist.data[0] = ecount.data
 
-# Loop through the other 98 pbins, replacing the relevant data slices in cube_of_hist.
-# Then include the count of any values >= pbin[99] in the 100th bin.
+# Loop through the other (nbins-2) pbins, replacing the relevant data slices in cube_of_hist.
+# Then include the count of any values >= pbin[nbins-1] in the nbins-th bin.
 
-    for x in range(1,99):
+    for x in range(1,nbins-1):
         ecount1=hist_count(reg_ppn_cube, pbin[x], pbin[x+1])
         cube_of_hist.data[x] = ecount1.data
 
-    ecount1=reg_ppn_cube.collapsed('time', iris.analysis.COUNT, function=lambda values: pbin[99] <= values)
-    cube_of_hist.data[99] = ecount1.data
+    ecount1=reg_ppn_cube.collapsed('time', iris.analysis.COUNT, function=lambda values: pbin[nbins-1] <= values)
+    cube_of_hist.data[nbins-1] = ecount1.data
 
     return cube_of_hist
 
 
-def calc_rain_contr(cube_of_hist):
+def calc_rain_contr(cube_of_hist, nbins=120):
     """
     Function to calculate histogram maps as total and fractional precipitation contributions
     for histogram cube of counts in each bin.
@@ -225,24 +228,26 @@ def calc_rain_contr(cube_of_hist):
     Args:
     * cube_of_hist:
        histogram cube of counts
+    * nbins:
+      Number of histogram bins. The original used 100.
 
     Calls:
     * Function make_cube to create merged cube of histogram
     """
 
-# Set up 100 bin mid-points for precipitation data in kg/m2/day, based on function used to define bin limits.
+# Set up nbins bin mid-points for precipitation data in kg/m2/day, based on function used to define bin limits.
 # Note that these will be slightly to the right of the geometric centre of the bin.
 
 # Define first bin midpoint as 0.0 since this bin includes all events where there was no rain. This effectively
 # limits the calculation of rainfall contributions to events >0.005 kg/m2/day.
 
-    bin_mid2=np.exp(np.log(0.005)+np.sqrt(np.linspace(0.5,98.5,99)*((np.square(np.log(120.)-np.log(0.005)))/59.)))
-    bin_mid=np.zeros(100)
-    bin_mid[1:]=bin_mid2[0:99]
+    bin_mid2=np.exp(np.log(0.005)+np.sqrt(np.linspace(0.5,nbins-1.5,nbins-1)*((np.square(np.log(120.)-np.log(0.005)))/59.)))
+    bin_mid=np.zeros(nbins)
+    bin_mid[1:]=bin_mid2[0:nbins-1]
 
 # Reshape bin_mid so that can multiply it with the correct dimension in cube_of_hist
 
-    bin_mid3=bin_mid.reshape(100,1,1)
+    bin_mid3=bin_mid.reshape(nbins,1,1)
 
 # Average rain in gridbox over data sample = sum over bins(no. events in bin x avg. ppn rate in bin) / (no. of intervals in sample)
 # Note that cube_of_hist is designed such that the sum over the whole histogram = number of intervals in sample.
